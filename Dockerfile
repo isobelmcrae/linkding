@@ -20,8 +20,8 @@ FROM python:3.13.7-slim-trixie AS build-deps
 RUN apt-get update && apt-get -y install build-essential pkg-config libpq-dev libicu-dev libsqlite3-dev libffi-dev libpcre2-dev wget unzip
 WORKDIR /etc/linkding
 # install uv, use installer script for now as distroless images are not availabe for armv7
-ADD https://astral.sh/uv/0.8.13/install.sh /uv-installer.sh
-RUN chmod +x /uv-installer.sh && /uv-installer.sh
+RUN wget -q https://astral.sh/uv/0.8.13/install.sh -O /uv-installer.sh && \
+    chmod +x /uv-installer.sh && /uv-installer.sh
 # install python dependencies
 COPY pyproject.toml uv.lock ./
 RUN /root/.local/bin/uv sync --no-dev --group postgres
