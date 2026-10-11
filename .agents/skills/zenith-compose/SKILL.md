@@ -9,7 +9,26 @@ Inspect the app's build scripts, runtime entrypoint, port, required services, he
 
 For a preview, the CLI uploads local source and builds the root Dockerfile. `zenith check` reports the active preview policy; fix its errors rather than guessing support from generic Docker Compose. Keep secrets in a gitignored `.env.local` for tests. Do not commit them or place them in listing metadata.
 
-For a public submission, the pinned GitHub commit must contain a deployable `zenith-compose.yml` whose services use publicly pullable images. If the preview file uses `build: .`, publish an image and replace that build with its immutable image reference before submitting. Preserve required database, volumes, and health checks. Use `x-zenith.env` to map generated values and built-ins to the app's own environment variable names. Run `zenith check`, then `zenith up` to confirm actual behavior.
+Run `zenith check`, then `zenith up` to confirm the preview. For a public submission, the pinned GitHub commit must contain a deployable `zenith-compose.yml` whose services use publicly pullable images. If the preview file uses `build: .`, publish an image and replace that build with its immutable image reference before submitting. Preserve required database, volumes, and health checks. Use `x-zenith.env` to map generated values and built-ins to the app's own environment variable names. Publishing preflight validates that pinned public Compose file; `zenith check` validates the local preview form.
+
+For an app and Postgres that need the same password, generate it once and alias it to Postgres. Scope each variable to the service that uses it, and show an administrator password in the deployment credentials panel:
+
+```yaml
+x-zenith:
+  env:
+    APP_DB_PASSWORD:
+      generate: '([A-Za-z0-9_-]{16})([A-Za-z0-9_-]{16})'
+      services: [app]
+    POSTGRES_PASSWORD:
+      alias: APP_DB_PASSWORD
+      services: [db]
+    APP_ADMIN_PASSWORD:
+      generate: '([A-Za-z0-9_-]{8})([A-Za-z0-9_-]{8})'
+      services: [app]
+      input:
+        label: Admin password
+        secret: true
+```
 
 For apps that send mail, Zenith provides SMTP built-ins to deployed products. Map only the variables the app actually consumes. Example for an app that supports STARTTLS on port 587:
 

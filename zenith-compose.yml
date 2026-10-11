@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: linkding
 
   linkding:
-    image: ghcr.io/isobelmcrae/linkding@sha256:779c44c7cbee7c060c0e9fb02f5e7414efc87478cea7b58d10569f49f567feaa
+    image: ghcr.io/isobelmcrae/linkding@sha256:ae755d38a277e3a472ead3d89be4fc85b651fd2153efe045cfe0f6ae32bb0575
     volumes:
       - linkding_data:/etc/linkding/data
     ports:
