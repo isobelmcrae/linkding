@@ -1,0 +1,60 @@
+x-zenith:
+  env:
+    LD_DB_PASSWORD:
+      generate: '([A-Za-z0-9_-]{16})([A-Za-z0-9_-]{16})'
+      services: [linkding]
+    POSTGRES_PASSWORD:
+      alias: LD_DB_PASSWORD
+      services: [postgres]
+    LD_SUPERUSER_PASSWORD:
+      generate: '([A-Za-z0-9_-]{8})([A-Za-z0-9_-]{8})'
+      services: [linkding]
+      input:
+        label: Admin password
+        secret: true
+  catalog:
+    name: Linkding
+    description: Self-hosted bookmark manager with tags and search.
+    authors: [sissbruecker]
+    source: https://github.com/isobelmcrae/linkding
+    license: MIT
+    tags: [productivity, bookmarks]
+  expose:
+    - { service: linkding, port: 9090, web: true }
+
+services:
+  postgres:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U linkding -d linkding"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: linkding
+      POSTGRES_USER: linkding
+
+  linkding:
+    image: ghcr.io/isobelmcrae/linkding@sha256:779c44c7cbee7c060c0e9fb02f5e7414efc87478cea7b58d10569f49f567feaa
+    volumes:
+      - linkding_data:/etc/linkding/data
+    ports:
+      - "9090:9090"
+    environment:
+      LD_SERVER_HOST: 0.0.0.0
+      LD_SUPERUSER_NAME: admin
+      LD_DB_ENGINE: postgres
+      LD_DB_HOST: postgres
+      LD_DB_PORT: "5432"
+      LD_DB_DATABASE: linkding
+      LD_DB_USER: linkding
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  linkding_data:
+
