@@ -80,37 +80,3 @@ HEALTHCHECK --interval=30s --retries=3 --timeout=1s \
 CMD curl -f http://localhost:${LD_SERVER_PORT:-9090}/${LD_CONTEXT_PATH}health || exit 1
 
 CMD ["./bootstrap.sh"]
-
-
-# Run on the native build platform, the downloaded extension is architecture-independent
-FROM --platform=$BUILDPLATFORM node:22-alpine AS ublock-build
-WORKDIR /etc/linkding
-COPY scripts/setup-ublock.sh .
-# Install necessary tools
-# Download and unzip uBlock Origin Lite, patch manifest to enable annoyances by default
-RUN apk add --no-cache curl jq unzip && \
-    sh setup-ublock.sh
-
-
-FROM linkding AS linkding-plus
-# install chromium
-RUN apt-get update && apt-get -y install chromium
-# install node
-ENV NODE_MAJOR=22
-RUN apt-get install -y gnupg2 apt-transport-https ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update && apt-get install -y nodejs
-# install single-file-cli
-# pin transitive simple-cdp dependency, newer versions require Node >= 23 (CloseEvent global)
-# future note: Node 24 does not ship an arm/v7 build, drop latest-plus support for that platform at some point 
-RUN npm install -g single-file-cli@2.0.75 && \
-    npm install --prefix "$(npm root -g)/single-file-cli" simple-cdp@1.8.6
-# copy uBlock
-COPY --from=ublock-build /etc/linkding/uBOLite.chromium.mv3 uBOLite.chromium.mv3/
-# create chromium profile folder for user running background tasks and set permissions
-RUN mkdir -p chromium-profile &&  \
-    chown -R www-data:www-data chromium-profile &&  \
-    chown -R www-data:www-data uBOLite.chromium.mv3
-# enable snapshot support
-ENV LD_ENABLE_SNAPSHOTS=True
